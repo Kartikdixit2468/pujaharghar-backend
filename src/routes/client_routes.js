@@ -1,14 +1,21 @@
 // Build with proud by Kartik Dixit!
-
 const express = require("express");
-const routes = express.Router();
 const db = require("../config/db");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
+const SECRET_KEY = process.env.JWT_SECRET;
+const routes = express.Router();
+
+const createSessionToken = (email) => {
+  return (token = jwt.sign({ email: email }, SECRET_KEY, { expiresIn: "30d" }));
+};
 
 // Function to check all parameters and design query accordingly
 const insertUser = async (userData) => {
-  const { email, name, photo } = userData; // Destructure only the fields we care about
+  const { email, name, photo } = userData;
 
-  const filteredData = { email, name, photo }; // Create a new object with only the allowed fields
+  const filteredData = { email, name, photo };
 
   // Filter out any undefined or null fields
   const validFields = Object.entries(filteredData).filter(
@@ -26,15 +33,11 @@ const insertUser = async (userData) => {
   const query = `INSERT INTO users (${columns}) VALUES (${placeholders})`;
   // const query = "INSERT INTO users (email, name, photo) VALUES (?, ?, ?)";
 
-  // console.log(query);
-  // console.log(values);
-
-  // Assuming you're using mysql2 or something similar
   try {
     await db.execute(query, values);
-    return [true, "User Registered"];
-  } catch{
-    return [false,`Database Error`];
+    return { success: true, messgae: "User Registered" };
+  } catch {
+    return { success: false, messgae: "Database Error" };
   }
 };
 
@@ -69,19 +72,24 @@ routes.post("/register/user", async (req, res) => {
   const register = async (user_data) => {
     const user_email = user_data.email;
     const user_exist = await checkIfUserExist(user_email);
-    if(user_exist){
-      return [true,"User Exist"];
-    }
-    else{
+    if (user_exist) {
+      const token = createSessionToken(user_email);
+      return { success: true, messgae: "User Exist", token: token };
+    } else {
       const register_user = await insertUser(user_data);
-      return register_user;
+      if (register_user.success) {
+        const token = createSessionToken(user_email);
+        return { ...register_user, token: token };
+      } else {
+        const token = null;
+        return { ...register_user, token: token };
+      }
     }
   };
 
-  let response = await register(user_data) 
-  console.log(response)
-  res.send(response)
-
+  let response = await register(user_data);
+  console.log(response);
+  res.send(response);
 });
 
 module.exports = routes;
