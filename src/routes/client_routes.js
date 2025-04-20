@@ -88,8 +88,22 @@ routes.post("/register/user", async (req, res) => {
   };
 
   let response = await register(user_data);
-  console.log(response);
+  // console.log(response);
   res.send(response);
+});
+
+routes.post("/user/verify/securitytoken", async (req, res) => {
+  console.log("POST request received for verification");
+  console.log(req.body)
+  const token  = req.body.token
+  const decoded_data = jwt.verify(token, SECRET_KEY)
+  console.log(decoded_data)
+  if (checkIfUserExist(decoded_data.email)){
+    res.json({success: true})
+  }
+  else{
+  res.json({success: false})
+  }
 });
 
 module.exports = routes;
