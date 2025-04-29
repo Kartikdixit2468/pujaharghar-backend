@@ -13,9 +13,9 @@ const createSessionToken = (email) => {
 
 // Function to check all parameters and design query accordingly
 const insertUser = async (userData) => {
-  const { email, name, photo } = userData;
+  const { email, name, photo, phone , dob, gender} = userData;
 
-  const filteredData = { email, name, photo };
+  const filteredData = { email, name, photo, phone, dob, gender};
 
   // Filter out any undefined or null fields
   const validFields = Object.entries(filteredData).filter(
@@ -29,6 +29,11 @@ const insertUser = async (userData) => {
   const columns = validFields.map(([key]) => key).join(", ");
   const placeholders = validFields.map(() => "?").join(", ");
   const values = validFields.map(([_, value]) => value);
+  console.log(columns)
+  console.log(values)
+  console.log(placeholders)
+  // return { success: true, messgae: "User Registered" };
+
 
   const query = `INSERT INTO users (${columns}) VALUES (${placeholders})`;
   // const query = "INSERT INTO users (email, name, photo) VALUES (?, ?, ?)";
@@ -92,17 +97,41 @@ routes.post("/register/user", async (req, res) => {
   res.send(response);
 });
 
+routes.post("/register/user/mannual", async (req, res) => {
+  console.log("Got request!")
+  const user_data = req.body;
+
+  console.log(user_data)
+
+  const register = async (user_data) => {
+    const user_email = user_data.email;
+    console.log("email: ", user_email)
+      const register_user = await insertUser(user_data);
+      if (register_user.success) {
+        const token = createSessionToken(user_email);
+        return { ...register_user, token: token };
+      } else {
+        const token = null;
+        return { ...register_user, token: token };
+      }
+  };
+
+  let response = await register(user_data);
+  // console.log(response);
+  res.send(response);
+
+});
+
 routes.post("/user/verify/securitytoken", async (req, res) => {
   console.log("POST request received for verification");
-  console.log(req.body)
-  const token  = req.body.token
-  const decoded_data = jwt.verify(token, SECRET_KEY)
-  console.log(decoded_data)
-  if (checkIfUserExist(decoded_data.email)){
-    res.json({success: true})
-  }
-  else{
-  res.json({success: false})
+  console.log(req.body);
+  const token = req.body.token;
+  const decoded_data = jwt.verify(token, SECRET_KEY);
+  console.log(decoded_data);
+  if (checkIfUserExist(decoded_data.email)) {
+    res.json({ success: true });
+  } else {
+    res.json({ success: false });
   }
 });
 
