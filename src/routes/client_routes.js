@@ -2,6 +2,7 @@
 const express = require("express");
 const db = require("../config/db");
 const jwt = require("jsonwebtoken");
+const { route } = require("./client_routes");
 require("dotenv").config();
 
 const SECRET_KEY = process.env.JWT_SECRET;
@@ -13,27 +14,25 @@ const createSessionToken = (email) => {
 
 function str_to_date(dateStr) {
   // Expects input like '4/12/2000'
-  if (!dateStr || typeof dateStr !== 'string') return null;
+  if (!dateStr || typeof dateStr !== "string") return null;
 
-  const parts = dateStr.split('/'); // ['4', '12', '2000']
+  const parts = dateStr.split("/"); // ['4', '12', '2000']
   if (parts.length !== 3) return null;
 
   const [day, month, year] = parts;
-  
+
   // Zero-pad month and day
-  const mm = month.padStart(2, '0');
-  const dd = day.padStart(2, '0');
+  const mm = month.padStart(2, "0");
+  const dd = day.padStart(2, "0");
 
-  return `${year}-${mm}-${dd}`; // Returns '2000-04-12'
+  return `${year}-${dd}-${mm}`; // Returns '2000-04-12'
 }
-
-
 
 // Function to check all parameters and design query accordingly
 const insertUser = async (userData) => {
-  const { email, name, photo, phone , dob, gender} = userData;
+  const { email, name, photo, phone, dob, gender } = userData;
 
-  const filteredData = { email, name, photo, phone, dob, gender};
+  const filteredData = { email, name, photo, phone, dob, gender };
 
   // Filter out any undefined or null fields
   const validFields = Object.entries(filteredData).filter(
@@ -47,25 +46,25 @@ const insertUser = async (userData) => {
   const columns = validFields.map(([key]) => key).join(", ");
   const placeholders = validFields.map(() => "?").join(", ");
   const values = validFields.map(([_, value]) => value);
-  
-  const columns_arr =  columns.split(", ")
+
+  const columns_arr = columns.split(", ");
   if (columns_arr.includes("dob")) {
     const index = columns_arr.indexOf("dob");
-    values[4] = str_to_date(values[4], '%m/%d/%Y');
+    values[4] = str_to_date(values[4], "%m/%d/%Y");
   } else {
-    console.log('Not found');
+    console.log("Not found");
   }
-  console.log(columns_arr)
-  console.log(values)
+  console.log(columns_arr);
+  console.log(values);
 
   const query = `INSERT INTO users (${columns}) VALUES (${placeholders})`;
   // console.log(query)
   try {
     await db.execute(query, values);
     return { success: true, messgae: "User Registered" };
-  } catch(error) {
-    console.log("you got it")
-    console.log(error)
+  } catch (error) {
+    console.log("you got it");
+    console.log(error);
     return { success: false, messgae: "Database Error" };
   }
 };
@@ -122,37 +121,50 @@ routes.post("/register/user", async (req, res) => {
 });
 
 routes.post("/register/user/mannual", async (req, res) => {
-  console.log("Got request!")
+  console.log("Got request!");
   const user_data = req.body;
 
-  console.log(user_data)
+  console.log(user_data);
 
   const register = async (user_data) => {
     const user_email = user_data.email;
-      const register_user = await insertUser(user_data);
-      if (register_user.success) {
-        const token = createSessionToken(user_email);
-        return { ...register_user, token: token };
-      } else {
-        const token = null;
-        return { ...register_user, token: token };
-      }
+    const register_user = await insertUser(user_data);
+    if (register_user.success) {
+      const token = createSessionToken(user_email);
+      return { ...register_user, token: token };
+    } else {
+      const token = null;
+      return { ...register_user, token: token };
+    }
   };
 
   let response = await register(user_data);
   // console.log(response);
   res.send(response);
-
 });
 
 routes.post("/user/existing/check", async (req, res) => {
   console.log("Checking if user exist");
-  const email = req.body.email
-  const ifExist = await checkIfUserExist(email)
-  console.log(ifExist)
-  res.json({user_exist: ifExist})
+  const email = req.body.email;
+  const ifExist = await checkIfUserExist(email);
+  console.log(ifExist);
+  res.json({ exist: ifExist });
 });
 
+routes.post("/user/login", async (req, res) => {
+  console.log('login req!')
+  const user = req.body.email;
+  const ifExist = await checkIfUserExist(user);
+  if (ifExist) {
+    const token = createSessionToken(user);
+    console.log("done")
+    res.json({ success: true, token: token });
+  }
+  else{
+    console.log("done but yk")
+    res.json({ success: false, token: null });
+  }
+});
 
 
 routes.post("/user/verify/securitytoken", async (req, res) => {
