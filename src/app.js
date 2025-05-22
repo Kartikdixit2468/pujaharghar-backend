@@ -8,6 +8,11 @@ const service_routes = require('./routes/service_routes')
 // Middlewares
 app.use(express.json())
 
+// In Express.js
+app.use('/uploads/pujas', express.static('uploads/pujas'));
+app.use('/uploads/category', express.static('uploads/category'));
+app.use('/uploads', express.static('uploads'));
+
 
 // Defining Routes
 app.get('/', (req, res)=> {
