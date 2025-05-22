@@ -2,7 +2,8 @@
 const express = require("express");
 const db = require("../config/db");
 const jwt = require("jsonwebtoken");
-const { route } = require("./client_routes");
+const authenticateToken = require("../middlewares/validateAuthToken");
+
 require("dotenv").config();
 
 const SECRET_KEY = process.env.JWT_SECRET;
@@ -152,31 +153,92 @@ routes.post("/user/existing/check", async (req, res) => {
 });
 
 routes.post("/user/login", async (req, res) => {
-  console.log('login req!')
+  console.log("login req!");
   const user = req.body.email;
   const ifExist = await checkIfUserExist(user);
   if (ifExist) {
     const token = createSessionToken(user);
-    console.log("done")
-    res.json({ success: true, token: token });
-  }
-  else{
-    console.log("done but yk")
+    res.status(200).res.json({ success: true, token: token });
+  } else {
     res.json({ success: false, token: null });
   }
 });
 
-
 routes.post("/user/verify/securitytoken", async (req, res) => {
   console.log("POST request received for verification");
-  console.log(req.body);
   const token = req.body.token;
   const decoded_data = jwt.verify(token, SECRET_KEY);
-  console.log(decoded_data);
   if (checkIfUserExist(decoded_data.email)) {
-    res.json({ success: true });
+    res.status(200).json({ success: true });
   } else {
     res.json({ success: false });
+  }
+});
+
+routes.get("/trending/pujas", authenticateToken, async (req, res) => {
+  const ifExist = await checkIfUserExist(req.user.email);
+  if (ifExist) {
+    const [puja_data] = await db.execute("select puja_id from trending_pujas");
+    const IDs = puja_data.map((obj) => {
+      return obj.puja_id;
+    });
+    if (IDs.length > 0) {
+      const placeholders = IDs.map(() => "?").join(", ");
+      const [data] = await db.execute(
+        `SELECT * FROM puja WHERE puja_id IN (${placeholders})`,
+        IDs
+      );
+      res.status(200).json({ success: true, data: data });
+    } else {
+      res.json({ success: false, error: "Dataset Empty", data: {} });
+    }
+  } else {
+    res.status(403).json({ success: false, error: "Invalid token" });
+  }
+});
+
+routes.get("/pujas/Category", authenticateToken, async (req, res) => {
+  const ifExist = await checkIfUserExist(req.user.email);
+  if (ifExist) {
+    try {
+      const [categories] = await db.execute("select * from categories");
+      // console.log(categories);
+      if (categories.length > 0) {
+        res.status(200).json({ success: true, data: categories });
+      } else {
+        res.json({ success: false, error: "Dataset Empty", data: {} });
+      }
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  } else {
+    res.status(403).json({ success: false, error: "Invalid token" });
+  }
+});
+
+routes.get("/fetch/puja/details/:puja_id", authenticateToken, async (req, res) => {
+  console.log("puja fetch req!")
+  const ifExist = await checkIfUserExist(req.user.email);
+  if (ifExist) {
+    try {
+      const {puja_id} = req.params
+      
+      const [puja_details] = await db.execute(`select * from puja where puja_id=${puja_id}`);
+      
+      if (puja_details.length >0) {
+        const data = puja_details[0]
+        res.status(200).json({ success: true, data: data });
+      } 
+      else {
+        res.json({ success: false, error: "Dataset Empty", data: {} });
+      }
+    } 
+    catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  } 
+  else {
+    res.status(403).json({ success: false, error: "Invalid token" });
   }
 });
 
