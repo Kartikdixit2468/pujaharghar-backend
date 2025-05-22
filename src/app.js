@@ -11,6 +11,7 @@ app.use(express.json())
 // In Express.js
 app.use('/uploads/pujas', express.static('uploads/pujas'));
 app.use('/uploads/category', express.static('uploads/category'));
+app.use('/uploads/priest', express.static('uploads/priest'));
 app.use('/uploads', express.static('uploads'));
 
 

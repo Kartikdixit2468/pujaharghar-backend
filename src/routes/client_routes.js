@@ -216,28 +216,95 @@ routes.get("/pujas/Category", authenticateToken, async (req, res) => {
   }
 });
 
-routes.get("/fetch/puja/details/:puja_id", authenticateToken, async (req, res) => {
-  console.log("puja fetch req!")
+routes.get(
+  "/fetch/puja/details/:puja_id",
+  authenticateToken,
+  async (req, res) => {
+    console.log("puja fetch req!");
+    const ifExist = await checkIfUserExist(req.user.email);
+    if (ifExist) {
+      try {
+        const { puja_id } = req.params;
+
+        const [puja_details] = await db.execute(
+          `select * from puja where puja_id=${puja_id}`
+        );
+
+        if (puja_details.length > 0) {
+          const data = puja_details[0];
+          // console.log(data)
+          res.status(200).json({ success: true, data: data });
+        } else {
+          res.json({ success: false, error: "Dataset Empty", data: {} });
+        }
+      } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+      }
+    } else {
+      res.status(403).json({ success: false, error: "Invalid token" });
+    }
+  }
+);
+
+routes.get("/packages/:puja_id", authenticateToken, async (req, res) => {
+  console.log("packages fetch req!");
   const ifExist = await checkIfUserExist(req.user.email);
   if (ifExist) {
     try {
-      const {puja_id} = req.params
-      
-      const [puja_details] = await db.execute(`select * from puja where puja_id=${puja_id}`);
-      
-      if (puja_details.length >0) {
-        const data = puja_details[0]
+      const { puja_id } = req.params;
+      console.log("got id => ", puja_id);
+
+      const [packages_details] = await db.execute(
+        `select * from packages where puja_id=${puja_id}`
+      );
+
+      const data = packages_details.map((package) => {
+        const desc = package.Description;
+        const features = desc.split("|").map((item) => item.trim());
+        return { id: package.package_id ,name: package.name + ' Package' , features: features, price: package.price};
+      });
+
+      if (data.length >0) {
         res.status(200).json({ success: true, data: data });
-      } 
+      }
       else {
         res.json({ success: false, error: "Dataset Empty", data: {} });
       }
-    } 
-    catch (err) {
+    } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
-  } 
-  else {
+  } else {
+    res.status(403).json({ success: false, error: "Invalid token" });
+  }
+});
+
+routes.get("/fetch/priest/", authenticateToken, async (req, res) => {
+  console.log("packages fetch req!");
+  const ifExist = await checkIfUserExist(req.user.email);
+  if (ifExist) {
+    try {
+
+      const [priest_list] = await db.execute(
+        `select * from pandit`
+      );
+
+      // console.log(priest_list)
+
+      const data = priest_list.map((priest) => {
+        return {id: priest.pandit_id, name: priest.name, gender: priest.gender, exp: priest.experience, img: priest.photo};
+      });
+
+      if (data.length >0) {
+        console.log(data)
+        res.status(200).json({ success: true, data: data });
+      }
+      else {
+        res.json({ success: false, error: "Dataset Empty", data: {} });
+      }
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  } else {
     res.status(403).json({ success: false, error: "Invalid token" });
   }
 });
