@@ -216,8 +216,7 @@ routes.get("/pujas/Category", authenticateToken, async (req, res) => {
   }
 });
 
-routes.get(
-  "/fetch/puja/details/:puja_id",
+routes.get( "/fetch/puja/details/:puja_id",
   authenticateToken,
   async (req, res) => {
     console.log("puja fetch req!");
@@ -246,7 +245,7 @@ routes.get(
   }
 );
 
-routes.get("/packages/:puja_id", authenticateToken, async (req, res) => {
+routes.get("/puja/packages/:puja_id", authenticateToken, async (req, res) => {
   console.log("packages fetch req!");
   const ifExist = await checkIfUserExist(req.user.email);
   if (ifExist) {
@@ -261,13 +260,17 @@ routes.get("/packages/:puja_id", authenticateToken, async (req, res) => {
       const data = packages_details.map((package) => {
         const desc = package.Description;
         const features = desc.split("|").map((item) => item.trim());
-        return { id: package.package_id ,name: package.name + ' Package' , features: features, price: package.price};
+        return {
+          id: package.package_id,
+          name: package.name + " Package",
+          features: features,
+          price: package.price,
+        };
       });
 
-      if (data.length >0) {
+      if (data.length > 0) {
         res.status(200).json({ success: true, data: data });
-      }
-      else {
+      } else {
         res.json({ success: false, error: "Dataset Empty", data: {} });
       }
     } catch (err) {
@@ -277,28 +280,33 @@ routes.get("/packages/:puja_id", authenticateToken, async (req, res) => {
     res.status(403).json({ success: false, error: "Invalid token" });
   }
 });
+
 
 routes.get("/fetch/priest/", authenticateToken, async (req, res) => {
   console.log("packages fetch req!");
   const ifExist = await checkIfUserExist(req.user.email);
   if (ifExist) {
     try {
-
       const [priest_list] = await db.execute(
-        `select * from pandit`
+        `select * from pandit where booking_status=0`
       );
 
       // console.log(priest_list)
 
       const data = priest_list.map((priest) => {
-        return {id: priest.pandit_id, name: priest.name, gender: priest.gender, exp: priest.experience, img: priest.photo};
+        return {
+          id: priest.pandit_id,
+          name: priest.name,
+          gender: priest.gender,
+          exp: priest.experience,
+          img: priest.photo,
+        };
       });
 
-      if (data.length >0) {
-        console.log(data)
+      if (data.length > 0) {
+        // console.log(data);
         res.status(200).json({ success: true, data: data });
-      }
-      else {
+      } else {
         res.json({ success: false, error: "Dataset Empty", data: {} });
       }
     } catch (err) {
@@ -308,5 +316,58 @@ routes.get("/fetch/priest/", authenticateToken, async (req, res) => {
     res.status(403).json({ success: false, error: "Invalid token" });
   }
 });
+
+routes.get(
+  "/fetch/checkout/:package_id",
+  authenticateToken,
+  async (req, res) => {
+    console.log("checkout page package fetch req!");
+    const ifExist = await checkIfUserExist(req.user.email);
+    if (ifExist) {
+      const { package_id } = req.params;
+
+      try {
+        const [package_info] = await db.execute(
+          `select * from packages where package_id=${package_id}`
+        );
+
+        if (package_info.length > 0) {
+
+          const puja_id = package_info[0].PUJA_ID;
+          const [puja_info] = await db.execute(
+            `select * from puja where puja_id=${puja_id}`
+          );
+
+          if (puja_info.length > 0) {
+            const [package_data]  = package_info
+            const [puja_data]  = puja_info
+            const desc = package_data.Description;
+            const features = desc.split("|").map((item) => item.trim());
+
+            const data = {
+              package_id: package_data.package_id,
+              package_name: package_data.name,
+              package_price: package_data.price,
+              features: features,
+              puja_id: puja_data.PUJA_ID,
+              puja_name: puja_data.NAME,
+              puja_desc: puja_data.Description,
+              travel_cost: 500,
+            }
+            res.status(200).json({ success: true, data: data });
+          } else {
+            res.json({ success: false, error: "Dataset Empty", data: {} });
+          }
+        } else {
+          res.json({ success: false, error: "Dataset Empty", data: {} });
+        }
+      } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+      }
+    } else {
+      res.status(403).json({ success: false, error: "Invalid token" });
+    }
+  }
+);
 
 module.exports = routes;
