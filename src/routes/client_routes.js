@@ -97,6 +97,7 @@ routes.get("/", (req, res) => {
 routes.post("/register/user", async (req, res) => {
   console.log("POST request received");
   const user_data = req.body;
+  console.log(user_data);
 
   const register = async (user_data) => {
     const user_email = user_data.email;
@@ -216,7 +217,8 @@ routes.get("/pujas/Category", authenticateToken, async (req, res) => {
   }
 });
 
-routes.get( "/fetch/puja/details/:puja_id",
+routes.get(
+  "/fetch/puja/details/:puja_id",
   authenticateToken,
   async (req, res) => {
     console.log("puja fetch req!");
@@ -281,7 +283,6 @@ routes.get("/puja/packages/:puja_id", authenticateToken, async (req, res) => {
   }
 });
 
-
 routes.get("/fetch/priest/", authenticateToken, async (req, res) => {
   console.log("packages fetch req!");
   const ifExist = await checkIfUserExist(req.user.email);
@@ -332,15 +333,14 @@ routes.get(
         );
 
         if (package_info.length > 0) {
-
           const puja_id = package_info[0].PUJA_ID;
           const [puja_info] = await db.execute(
             `select * from puja where puja_id=${puja_id}`
           );
 
           if (puja_info.length > 0) {
-            const [package_data]  = package_info
-            const [puja_data]  = puja_info
+            const [package_data] = package_info;
+            const [puja_data] = puja_info;
             const desc = package_data.Description;
             const features = desc.split("|").map((item) => item.trim());
 
@@ -353,7 +353,7 @@ routes.get(
               puja_name: puja_data.NAME,
               puja_desc: puja_data.Description,
               travel_cost: 500,
-            }
+            };
             res.status(200).json({ success: true, data: data });
           } else {
             res.json({ success: false, error: "Dataset Empty", data: {} });
@@ -368,6 +368,14 @@ routes.get(
       res.status(403).json({ success: false, error: "Invalid token" });
     }
   }
+);
+
+routes.get("/create-order/booking/:package_id", authenticateToken, async (req, res) => {
+
+  const user = req.user.email
+  
+
+}
 );
 
 module.exports = routes;

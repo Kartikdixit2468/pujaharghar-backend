@@ -4,6 +4,7 @@ const express = require('express');
 const app = express()
 const client_routes = require('./routes/client_routes')
 const service_routes = require('./routes/service_routes')
+const payment_routes = require('./routes/payment_routes')
 
 // Middlewares
 app.use(express.json())
@@ -25,6 +26,9 @@ app.use('/api/client', client_routes);
 
 // For Employees App!
 app.use('/api/service', service_routes);
+
+// For Payment Procsssing
+app.use('/api/payment', payment_routes);
 
 
 module.exports = app;
