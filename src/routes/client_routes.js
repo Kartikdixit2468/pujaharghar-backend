@@ -370,10 +370,54 @@ routes.get(
   }
 );
 
-routes.get("/create-order/booking/:package_id", authenticateToken, async (req, res) => {
-
-  const user = req.user.email
+routes.post("/create-order/booking/", authenticateToken, async (req, res) => {
+  console.log(" Creating an Order")
   
+  const user = req.user.email
+  const booking_info = req.body
+  
+  console.log(user)
+  console.log(booking_info)
+
+
+  const { package_id, dateOption, date, priest_id, payment_id } = req.body;
+  const user_email = req.user.email;
+
+  try {
+    // 1. Check if payment_id exists and is not consumed
+    const [paymentRows] = await db.execute(
+      'SELECT * FROM payments WHERE payment_id = ? AND is_consumed = 0',
+      [payment_id]
+    );
+
+    if (paymentRows.length === 0) {
+      return res.status(400).json({ success: false, message: 'Payment ID is invalid or already used.' });
+    }
+
+    // 2. Determine date and is_date_assured based on dateOption
+    const bookingDate = dateOption === 'specific' ? str_to_date(date) : null;
+    const isDateAssured = dateOption === 'specific' ? 1 : 0;
+
+    // 3. Insert into bookings table
+    console.log(date)
+    const [insertResult] = await db.execute(
+      `INSERT INTO bookings (Email, package_id, date, payment, is_date_assured, is_confirmed)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [user_email, package_id, bookingDate, 50, isDateAssured, 1]
+    );
+
+    // 4. Update payments table: mark is_consumed = 1
+    await db.execute(
+      'UPDATE payments SET is_consumed = 1 WHERE payment_id = ?',
+      [payment_id]
+    );
+
+    res.json({ success: true, booking_id: insertResult.insertId,  message: 'Booking created successfully.', booking_id: insertResult.insertId });
+  } catch (error) {
+    console.error('Error processing booking:', error);
+    res.status(500).json({ success: false, message: 'Server error while processing booking.' });
+  }
+
 
 }
 );
