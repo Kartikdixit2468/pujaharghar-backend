@@ -79,9 +79,29 @@ const fetchEmails = async () => {
   return user_emails;
 };
 
-const checkIfUserExist = async (user_email) => {
-  const emails = await fetchEmails();
-  return emails.includes(user_email);
+const fetchPhones = async () => {
+  const [phones_data] = await db.execute("select phone from users;");
+  const user_phones = phones_data.map((obj) => {
+    return obj.phone;
+  });
+  return user_phones;
+};
+
+const checkIfUserExist = async (user_email, user_phone) => {
+  let emailExists = false;
+  let phoneExists = false;
+
+  if (user_email) {
+    const emails = await fetchEmails();
+    emailExists = emails.includes(user_email);
+  }
+
+  if (user_phone) {
+    const phones = await fetchPhones();
+    phoneExists = phones.includes(user_phone);
+  }
+
+  return emailExists || phoneExists;
 };
 fetchEmails();
 
@@ -148,7 +168,8 @@ routes.post("/register/user/mannual", async (req, res) => {
 routes.post("/user/existing/check", async (req, res) => {
   console.log("Checking if user exist");
   const email = req.body.email;
-  const ifExist = await checkIfUserExist(email);
+  const phone = req.body.phone;
+  const ifExist = await checkIfUserExist(email, phone);
   console.log(ifExist);
   res.json({ exist: ifExist });
 });
@@ -156,10 +177,13 @@ routes.post("/user/existing/check", async (req, res) => {
 routes.post("/user/login", async (req, res) => {
   console.log("login req!");
   const user = req.body.email;
+  console.log(user)
   const ifExist = await checkIfUserExist(user);
+  console.log(ifExist)
   if (ifExist) {
+    console.log("ifExist")
     const token = createSessionToken(user);
-    res.status(200).res.json({ success: true, token: token });
+    res.status(200).json({ success: true, token: token });
   } else {
     res.json({ success: false, token: null });
   }
@@ -176,7 +200,8 @@ routes.post("/user/verify/securitytoken", async (req, res) => {
   }
 });
 
-routes.get("/trending/pujas", authenticateToken, async (req, res) => {
+routes.post("/trending/pujas", authenticateToken, async (req, res) => {
+  console.log("Got req");
   const ifExist = await checkIfUserExist(req.user.email);
   if (ifExist) {
     const [puja_data] = await db.execute("select puja_id from trending_pujas");
@@ -189,6 +214,7 @@ routes.get("/trending/pujas", authenticateToken, async (req, res) => {
         `SELECT * FROM puja WHERE puja_id IN (${placeholders})`,
         IDs
       );
+      console.log(data)
       res.status(200).json({ success: true, data: data });
     } else {
       res.json({ success: false, error: "Dataset Empty", data: {} });
@@ -199,6 +225,7 @@ routes.get("/trending/pujas", authenticateToken, async (req, res) => {
 });
 
 routes.get("/pujas/Category", authenticateToken, async (req, res) => {
+  console.log("got at category");
   const ifExist = await checkIfUserExist(req.user.email);
   if (ifExist) {
     try {
@@ -224,16 +251,20 @@ routes.get(
     console.log("puja fetch req!");
     const ifExist = await checkIfUserExist(req.user.email);
     if (ifExist) {
+       console.log("Here you go!")
       try {
         const { puja_id } = req.params;
-
+        console.log(req.params)
+        console.log(puja_id)
         const [puja_details] = await db.execute(
           `select * from puja where puja_id=${puja_id}`
         );
+        console.log(puja_details);
 
         if (puja_details.length > 0) {
           const data = puja_details[0];
-          // console.log(data)
+          console.log("You're inside puja details")
+          console.log(data)
           res.status(200).json({ success: true, data: data });
         } else {
           res.json({ success: false, error: "Dataset Empty", data: {} });
@@ -256,11 +287,11 @@ routes.get("/puja/packages/:puja_id", authenticateToken, async (req, res) => {
       console.log("got id => ", puja_id);
 
       const [packages_details] = await db.execute(
-        `select * from packages where puja_id=${puja_id}`
+        `select * from package where puja_id=${puja_id}`
       );
 
       const data = packages_details.map((package) => {
-        const desc = package.Description;
+        const desc = package.description;
         const features = desc.split("|").map((item) => item.trim());
         return {
           id: package.package_id,
@@ -269,6 +300,8 @@ routes.get("/puja/packages/:puja_id", authenticateToken, async (req, res) => {
           price: package.price,
         };
       });
+
+      console.log(data);
 
       if (data.length > 0) {
         res.status(200).json({ success: true, data: data });
@@ -329,11 +362,13 @@ routes.get(
 
       try {
         const [package_info] = await db.execute(
-          `select * from packages where package_id=${package_id}`
+          `select * from package where package_id=${package_id}`
         );
 
+        console.log(package_info)
+
         if (package_info.length > 0) {
-          const puja_id = package_info[0].PUJA_ID;
+          const puja_id = package_info[0].puja_id;
           const [puja_info] = await db.execute(
             `select * from puja where puja_id=${puja_id}`
           );
@@ -341,7 +376,7 @@ routes.get(
           if (puja_info.length > 0) {
             const [package_data] = package_info;
             const [puja_data] = puja_info;
-            const desc = package_data.Description;
+            const desc = package_data.description;
             const features = desc.split("|").map((item) => item.trim());
 
             const data = {
@@ -349,9 +384,9 @@ routes.get(
               package_name: package_data.name,
               package_price: package_data.price,
               features: features,
-              puja_id: puja_data.PUJA_ID,
+              puja_id: puja_data.puja_id,
               puja_name: puja_data.NAME,
-              puja_desc: puja_data.Description,
+              puja_desc: puja_data.description,
               travel_cost: 500,
             };
             res.status(200).json({ success: true, data: data });

@@ -2,8 +2,11 @@ const jwt = require("jsonwebtoken");
 const SECRET_KEY = process.env.JWT_SECRET;
 
 const authMiddleware = (req, res, next) => {
+  console.log("In AUTH")
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Remove "Bearer"
+
+  // console.log("token: ", token)
 
   if (!token) return res.status(401).json({ success: false, error: "Token missing" });
 
