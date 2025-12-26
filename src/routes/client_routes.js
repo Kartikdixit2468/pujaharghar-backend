@@ -121,7 +121,7 @@ routes.post("/register/user", async (req, res) => {
 
   const register = async (user_data) => {
     const user_email = user_data.email;
-    const user_exist = await checkIfUserExist(user_email);
+    const user_exist = await checkIfUserExist(user_email, null);
     if (user_exist) {
       const token = createSessionToken(user_email);
       return { success: true, messgae: "User Exist", token: token };

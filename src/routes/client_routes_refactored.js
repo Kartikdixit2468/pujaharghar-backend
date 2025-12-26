@@ -51,7 +51,7 @@ routes.post("/user/existing/check", async (req, res) => {
     const phone = req.body.phone;
     const ifExist = await userService.checkUserExists(email, phone);
     console.log("User exists:", ifExist);
-    res.json({ exist: ifExist });
+    res.json(ifExist);
   } catch (error) {
     console.error("Check User Error:", error);
     res.status(500).json({ success: false, message: "Check failed" });
@@ -62,7 +62,8 @@ routes.post("/user/login", async (req, res) => {
   console.log("Login request received");
   try {
     const email = req.body.email;
-    const response = await userService.loginUser(email);
+    const phone = req.body.phone;
+    const response = await userService.loginUser(email, phone);
     res.status(response.success ? 200 : 401).json(response);
   } catch (error) {
     console.error("Login Error:", error);
@@ -74,20 +75,62 @@ routes.post("/user/verify/securitytoken", async (req, res) => {
   console.log("Token verification request received");
   try {
     const token = req.body.token;
-    const { tokenUtils } = require("../utils/tokenUtils");
+    const tokenUtils = require("../utils/tokenUtils");
     const decoded_data = tokenUtils.verifyToken(token);
     const ifExist = await userService.checkUserExists(decoded_data.email, null);
+    console.log("User existence for token:", ifExist);
+
     
     if (ifExist) {
+      console.log("Token valid for user:", decoded_data.email);
       res.status(200).json({ success: true });
     } else {
+      console.log("Token invalid - user does not exist");
       res.json({ success: false });
     }
   } catch (error) {
-    console.error("Token Verification Error:", error);
+    console.log("Token Verification Error:", error);
     res.status(401).json({ success: false, message: "Invalid token" });
   }
 });
+
+routes.post("/user/details/fetch", authenticateToken, async (req, res) => {
+  console.log("User details fetch request received");
+  try {
+    const phone = req.body.phone || null;
+    const email = req.user.email || null;
+    const checkExist = await userService.checkUserExists(email, phone);
+    
+    if (!checkExist) {
+      return res.status(403).json({ success: false, error: "Invalid User or Token" });
+    }
+    const response = await userService.getUserDetails(email, phone);
+    res.status(response.success ? 200 : 204).json(response);
+  } catch (error) {
+    console.error("User Details Fetch Error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch user details" });
+  }
+});
+
+
+routes.post("/user/details/update", authenticateToken, async (req, res) => {
+  console.log("User details update request received");
+  try {
+    const user_email = req.user.email;
+    const user_phone = req.body.phone || null;
+    const checkExist = await userService.checkUserExists(user_email, user_phone);
+    if (!checkExist) {
+      return res.status(403).json({ success: false, error: "Invalid User or Token" });
+    } 
+    const updated_data = req.body;
+    const response = await userService.updateUserDetails(user_email, user_phone, updated_data);
+    res.status(response.success ? 200 : 400).json(response);
+  } catch (error) {
+    console.error("User Details Update Error:", error);
+    res.status(500).json({ success: false, message: "Failed to update user details" });
+  }
+});
+
 
 // ==================== PUJA ROUTES ====================
 
@@ -206,13 +249,69 @@ routes.post("/create-order/booking/", authenticateToken, async (req, res) => {
   console.log("Creating an Order");
   try {
     const user_email = req.user.email;
+    const user_phone = req.body.phone;
     const booking_info = req.body;
     
-    const response = await bookingService.createBooking(user_email, booking_info);
+    const response = await bookingService.createBooking(user_email, user_phone, booking_info);
     res.status(response.success ? 200 : 400).json(response);
   } catch (error) {
     console.error("Booking Error:", error);
     res.status(500).json({ success: false, message: "Server error while processing booking." });
+  }
+});
+
+routes.post("/bookings/getall/", authenticateToken, async (req, res) => {
+  console.log("Fetching all bookings");
+  try {
+    const user_email = req.user.email;
+    const user_phone = req.body.phone || null;
+    const checkExist = await userService.checkUserExists(user_email, user_phone);
+    if (!checkExist) {
+      return res.status(403).json({ success: false, error: "Invalid User or Token" });
+    }
+    const response = await bookingService.getAllBookings(user_email, user_phone);
+    res.status(response.success ? 200 : 404).json(response);
+  } catch (error) {
+    console.error("Get All Bookings Error:", error);
+    res.status(500).json({ success: false, message: "Server error while fetching bookings." });
+  }
+});
+
+routes.post("/booking/details/", authenticateToken, async (req, res) => {
+  console.log("Fetching booking details");
+  try {
+    const user_email = req.user.email;
+    const user_phone = req.body.phone || null;
+    const booking_id = req.body.booking_id;
+    const checkExist = await userService.checkUserExists(user_email, user_phone);
+    if (!checkExist) {
+      return res.status(403).json({ success: false, error: "Invalid User or Token" });
+    } 
+    const response = await bookingService.getBookingDetails(booking_id);
+    res.status(response.success ? 200 : 404).json(response);
+  } catch (error) {
+    console.error("Get Booking Details Error:", error);
+    res.status(500).json({ success: false, message: "Server error while fetching booking details." });
+  }
+});
+
+
+routes.post("/booking/cancel/", authenticateToken, async (req, res) => {
+  console.log("Cancelling booking");
+  try {
+    const user_email = req.user.email;
+    const user_phone = req.body.phone || null;
+    const booking_id = req.body.booking_id;
+    const checkExist = await userService.checkUserExists(user_email, user_phone);
+    if (!checkExist) {
+      return res.status(403).json({ success: false, error: "Invalid User or Token" });
+    } 
+    const response = await bookingService.cancelBooking(booking_id);
+    res.status(response.success ? 200 : 400).json(response);
+  }
+  catch (error) {
+    console.error("Cancel Booking Error:", error);
+    res.status(500).json({ success: false, message: "Server error while cancelling booking." });
   }
 });
 

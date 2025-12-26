@@ -9,6 +9,7 @@ const createSessionToken = (email) => {
 
 const verifyToken = (token) => {
   try {
+    console.log(token);
     return jwt.verify(token, SECRET_KEY);
   } catch (error) {
     throw new Error("Invalid or expired token");

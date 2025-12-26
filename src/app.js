@@ -30,5 +30,4 @@ app.use('/api/service', service_routes);
 // For Payment Procsssing
 app.use('/api/payment', payment_routes);
 
-
 module.exports = app;
