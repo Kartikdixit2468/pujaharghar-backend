@@ -569,6 +569,37 @@ routes.post(
   }
 );
 
+routes.post("/user/update/phone", authenticateToken, async (req, res) => {
+  console.log("User phone number update request received");
+  try {
+    const user_id = req.user.id;
+    const new_phone = req.body.phone;
+
+    // Validate user exists
+    const checkExist = await userService.checkUserExists(null, null, user_id);
+    if (!checkExist.exists) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Invalid User or Token" });
+    }
+
+    // Validate phone is provided
+    if (!new_phone) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Phone number is required." });
+    }
+
+    const response = await userService.updatePhoneNumber(user_id, new_phone);
+    res.status(response.success ? 200 : 400).json(response);
+  } catch (error) {
+    console.error("User Phone Update Error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update phone number" });
+  }
+});
+
 routes.post(
   "/booking/request-cancellation/",
   authenticateToken,
