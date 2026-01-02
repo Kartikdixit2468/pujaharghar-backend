@@ -8,6 +8,7 @@ const pujaService = require("../services/pujaService");
 const packageService = require("../services/packageService");
 const priestService = require("../services/priestService");
 const bookingService = require("../services/bookingService");
+const otpService = require("../services/otpService");
 
 const routes = express.Router();
 
@@ -155,7 +156,7 @@ routes.post("/user/verify/securitytoken", async (req, res) => {
 
 routes.get("/user/details/fetch", authenticateToken, async (req, res) => {
   console.log("User details fetch request received");
-  console.log("Authenticated user ID:", req.user.id);
+  // console.log("Authenticated user ID:", req.user.id);
   try {
     const id = req.user.id;
     // const phone = req.body.phone || null;
@@ -171,6 +172,7 @@ routes.get("/user/details/fetch", authenticateToken, async (req, res) => {
         .json({ success: false, error: "Invalid User or Token" });
     }
     const response = await userService.getUserDetails(id);
+    console.log("User details fetched:", response);
     res
       .status(response.success ? 200 : 204)
       .json({ success: true, data: response.data });
@@ -569,34 +571,56 @@ routes.post(
   }
 );
 
-routes.post("/user/update/phone", authenticateToken, async (req, res) => {
+routes.post("/update/phone", authenticateToken, async (req, res) => {
   console.log("User phone number update request received");
   try {
     const user_id = req.user.id;
+    const otp = req.body.otp;
     const new_phone = req.body.phone;
+    const session_token = req.body.session_token;
+
+    console.log("New phone number:", new_phone);
+    console.log("Session token:", session_token);
+
+    // Validate inputs
+    if (!new_phone || !session_token) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number and session token are required."
+      });
+    }
+
+    // Verify OTP token with 2Factor service
+    const otpVerification = await otpService.verifyOTP(otp, session_token);
+    console.log("OTP Verification Result:", otpVerification);
+    // const otpVerification = { success: true }; // Dummy success response for now
+    
+    if (!otpVerification.success) {
+      return res.status(401).json({
+        success: false,
+        message: "OTP verification failed. Please verify your phone number again."
+      });
+    }
 
     // Validate user exists
     const checkExist = await userService.checkUserExists(null, null, user_id);
     if (!checkExist.exists) {
-      return res
-        .status(403)
-        .json({ success: false, error: "Invalid User or Token" });
+      return res.status(403).json({
+        success: false,
+        error: "Invalid User or Token"
+      });
     }
 
-    // Validate phone is provided
-    if (!new_phone) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Phone number is required." });
-    }
-
+    // Update phone number
     const response = await userService.updatePhoneNumber(user_id, new_phone);
     res.status(response.success ? 200 : 400).json(response);
+
   } catch (error) {
     console.error("User Phone Update Error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update phone number" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to update phone number"
+    });
   }
 });
 
