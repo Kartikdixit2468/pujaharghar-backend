@@ -17,18 +17,13 @@ const checkIfUserExist = async (user_email, user_phone, user_id=null) => {
   user_email = user_email || null;
   user_phone = user_phone || null;
 
-  console.log("Checking existence for user with email:", user_email, "phone:", user_phone, "user_id:", user_id);
-
   if(user_id) {
-    console.log("Checking existence for user ID inside the checkifexist function:", user_id);
     try {
-      console.log("User ID provided, checking by ID:", user_id);
       const [idData] = await db.execute(
         "SELECT id FROM users WHERE id = ?",
         [user_id]
       );
       if (idData.length > 0) {
-        console.log("User ID exists in database at the core function:", user_id);
         return { exists: true, user_id: idData[0].id, message: "User ID exists" };
       }
     } catch (error) {
