@@ -130,6 +130,54 @@ const checkUserExists = async (email, phone, user_id) => {
   return await checkIfUserExist(email, phone, user_id);
 };
 
+const updatePhoneNumber = async (user_id, new_phone) => {
+  try {
+    if (!new_phone || new_phone.trim() === "") {
+      return {
+        success: false,
+        message: "Phone number is required.",
+      };
+    }
+
+    // Check if the new phone number already exists for another user
+    const [existingPhone] = await db.execute(
+      "SELECT id FROM users WHERE phone = ? AND id != ?",
+      [new_phone, user_id]
+    );
+
+    if (existingPhone.length > 0) {
+      return {
+        success: false,
+        message: "Phone number already in use by another user.",
+      };
+    }
+
+    // Update the phone number
+    const [result] = await db.execute(
+      "UPDATE users SET phone = ? WHERE id = ?",
+      [new_phone, user_id]
+    );
+
+    if (result.affectedRows === 0) {
+      return {
+        success: false,
+        message: "User not found.",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Phone number updated successfully.",
+    };
+  } catch (error) {
+    console.error("Database Error:", error);
+    return {
+      success: false,
+      message: "Database Error",
+    };
+  }
+};
+
 const checkProfilecompleteness = async (user_id) => {
   // const [user] = await getUserDetails(email, phone);
   const [user] = await getUserDetails(user_id);
@@ -223,6 +271,7 @@ module.exports = {
   checkUserExists,
   getUserDetails,
   updateUserDetails,
+  updatePhoneNumber,
   checkProfilecompleteness,
   checkMannualAuthentication,
 };
