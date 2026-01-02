@@ -5,6 +5,7 @@ const app = express()
 const client_routes = require('./routes/client_routes_refactored')
 const service_routes = require('./routes/service_routes')
 const payment_routes = require('./routes/payment_routes')
+const ticket_routes = require('./routes/ticket_routes')
 
 // Middlewares
 app.use(express.json())
@@ -29,5 +30,8 @@ app.use('/api/service', service_routes);
 
 // For Payment Procsssing
 app.use('/api/payment', payment_routes);
+
+// For Support Tickets
+app.use('/api/tickets', ticket_routes);
 
 module.exports = app;

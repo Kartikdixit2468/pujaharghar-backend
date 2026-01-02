@@ -32,15 +32,75 @@ routes.post("/register/user", async (req, res) => {
   }
 });
 
-routes.post("/register/user/mannual", async (req, res) => {
+routes.post("/check/register/user/manual", async (req, res) => {
+  console.log("POST request received - Manual User Registration check*");
+
+  const user_email = req.body.email || null;
+  const user_phone = req.body.phone || null;
+
+  const checkifRegistrationAllowed =
+    await userService.checkMannualAuthentication(user_email, user_phone);
+
+  if (!checkifRegistrationAllowed.success) {
+    console.log(
+      "Manual registration not allowed for user:",
+      user_email,
+      user_phone
+    );
+    console.log("Reason:", checkifRegistrationAllowed.message);
+    return res
+      .status(403)
+      .json({ success: false, message: checkifRegistrationAllowed.message });
+  }
+
+  else if (checkifRegistrationAllowed.registerUser) {
+    return res
+      .status(200)
+      .json({ success: true, registerUser: true, loginUser: false, message: checkifRegistrationAllowed.message });
+  }
+  else if (checkifRegistrationAllowed.loginUser) {
+    // try {
+      // const response = await userService.loginUser(user_email, user_phone);
+      // res.status(response.success ? 200 : 401).json(response);
+      return res
+      .status(200)
+      .json({ success: true, registerUser: false, loginUser: true, message: checkifRegistrationAllowed.message });
+  }
+    // } 
+    // catch (error) {
+    //   console.error("Login Error:", error);
+    //   res.status(500).json({ success: false, message: "Login failed" });
+    // }
+});
+
+routes.post("/register/user/manual", async (req, res) => {
   console.log("POST request received - Manual User Registration");
-  try {
-    const user_data = req.body;
-    const response = await userService.registerUser(user_data);
-    res.json(response);
-  } catch (error) {
-    console.error("Registration Error:", error);
-    res.status(500).json({ success: false, message: "Registration failed" });
+
+  const user_email = req.body.email || null;
+  const user_phone = req.body.phone || null;
+
+
+  if (user_email && user_phone) {
+    try {
+      const user_data = req.body;
+      const response = await userService.registerUser(user_data);
+      res.json(response);
+    } 
+    catch (error) {
+      console.error("Registration Error:", error);
+      res.status(500).json({ success: false, message: "Registration failed" });
+    }
+  }
+  else {
+    console.log(
+      "Manual registration requires both email and phone:",
+      user_email,
+      user_phone
+    );
+    return res
+      .status(400)
+      .json({ success: false, message: "Email and Phone are required" });
+  
   }
 });
 
@@ -80,8 +140,7 @@ routes.post("/user/verify/securitytoken", async (req, res) => {
     const ifExist = await userService.checkUserExists(decoded_data.email, null);
     console.log("User existence for token:", ifExist);
 
-    
-    if (ifExist) {
+    if (ifExist.exists) {
       console.log("Token valid for user:", decoded_data.email);
       res.status(200).json({ success: true });
     } else {
@@ -94,52 +153,135 @@ routes.post("/user/verify/securitytoken", async (req, res) => {
   }
 });
 
-routes.post("/user/details/fetch", authenticateToken, async (req, res) => {
+routes.get("/user/details/fetch", authenticateToken, async (req, res) => {
   console.log("User details fetch request received");
+  console.log("Authenticated user ID:", req.user.id);
   try {
-    const phone = req.body.phone || null;
-    const email = req.user.email || null;
-    const checkExist = await userService.checkUserExists(email, phone);
-    
-    if (!checkExist) {
-      return res.status(403).json({ success: false, error: "Invalid User or Token" });
+    const id = req.user.id;
+    // const phone = req.body.phone || null;
+    // const email = req.body.email || null;
+    // const checkExist = await userService.checkUserExists(email, phone);
+    const checkExist = await userService.checkUserExists(null, null, id);
+    console.log("User existence check result at core function of /details/fetch:", checkExist);
+
+    if (!checkExist.exists) {
+      console.log("Invalid user or token for ID at core function of /details/fetch:", id);
+      return res
+        .status(403)
+        .json({ success: false, error: "Invalid User or Token" });
     }
-    const response = await userService.getUserDetails(email, phone);
-    res.status(response.success ? 200 : 204).json(response);
+    const response = await userService.getUserDetails(id);
+    res
+      .status(response.success ? 200 : 204)
+      .json({ success: true, data: response.data });
   } catch (error) {
     console.error("User Details Fetch Error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch user details" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch user details" });
   }
 });
-
 
 routes.post("/user/details/update", authenticateToken, async (req, res) => {
   console.log("User details update request received");
   try {
-    const user_email = req.user.email;
-    const user_phone = req.body.phone || null;
-    const checkExist = await userService.checkUserExists(user_email, user_phone);
-    if (!checkExist) {
-      return res.status(403).json({ success: false, error: "Invalid User or Token" });
-    } 
+    const id = req.user.id;
+    // const user_email = req.body.email;
+    // const user_phone = req.body.phone || null;
+    const checkExist = await userService.checkUserExists(
+      null,
+      null,
+      id
+    );
+    if (!checkExist.exists) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Invalid User or Token" });
+    }
     const updated_data = req.body;
-    const response = await userService.updateUserDetails(user_email, user_phone, updated_data);
+    console.log("Updated Data Received at Route:", updated_data);
+    const response = await userService.updateUserDetails(
+      id,
+      updated_data
+    );
     res.status(response.success ? 200 : 400).json(response);
   } catch (error) {
     console.error("User Details Update Error:", error);
-    res.status(500).json({ success: false, message: "Failed to update user details" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update user details" });
   }
 });
 
+routes.get(
+  "/user/profile/completeness/check",
+  authenticateToken,
+  async (req, res) => {
+    console.log("User profile completeness check request received");
+    try {
+      const id = req.user.id;
+      // const user_email = req.body.email;
+      // const user_phone = req.body.phone || null;
+      const checkExist = await userService.checkUserExists(
+        id
+      );
+      if (!checkExist.exists) {
+        return res
+          .status(403)
+          .json({ success: false, error: "Invalid User or Token" });
+      }
+      const isComplete = await userService.checkProfilecompleteness(
+        id
+      );
+      const userDetails = await userService.getUserDetails(
+        id
+      );
+
+      res
+        .status(200)
+        .json({
+          success: true,
+          profile_completed: isComplete,
+          data: isComplete ? userDetails : {},
+        });
+    } catch (error) {
+      console.error("Profile Completeness Check Error:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Failed to check profile completeness",
+        });
+    }
+  }
+);
 
 // ==================== PUJA ROUTES ====================
 
-routes.post("/trending/pujas", authenticateToken, async (req, res) => {
+routes.get("/pujas/all", authenticateToken, async (req, res) => {
+  console.log("All pujas request received");
+  const id = req.user.id;
+  // const user_phone = req.body.phone || null;
+  try {
+    const ifExist = await userService.checkUserExists(null, null, id);
+    if (ifExist.exists) {
+      const response = await pujaService.getAllPujas();
+      res.status(response.success ? 200 : 404).json(response);
+    } else {
+      res.status(403).json({ success: false, error: "Invalid token" });
+    }
+  } catch (error) {
+    console.error("All Pujas Error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+routes.get("/trending/pujas", authenticateToken, async (req, res) => {
   console.log("Trending pujas request received");
   try {
-    const ifExist = await userService.checkUserExists(req.user.email, null);
-    
-    if (ifExist) {
+    const ifExist = await userService.checkUserExists(null, null, req.user.id);
+
+    if (ifExist.exists) {
       const response = await pujaService.getTrendingPujas();
       res.status(response.success ? 200 : 404).json(response);
     } else {
@@ -154,9 +296,8 @@ routes.post("/trending/pujas", authenticateToken, async (req, res) => {
 routes.get("/pujas/Category", authenticateToken, async (req, res) => {
   console.log("Categories request received");
   try {
-    const ifExist = await userService.checkUserExists(req.user.email, null);
-    
-    if (ifExist) {
+    const ifExist = await userService.checkUserExists(null, null, req.user.id);
+    if (ifExist.exists) {
       const response = await pujaService.getCategories();
       res.status(response.success ? 200 : 404).json(response);
     } else {
@@ -168,32 +309,58 @@ routes.get("/pujas/Category", authenticateToken, async (req, res) => {
   }
 });
 
-routes.get("/fetch/puja/details/:puja_id", authenticateToken, async (req, res) => {
-  console.log("Puja details request received");
-  try {
-    const ifExist = await userService.checkUserExists(req.user.email, null);
-    
-    if (ifExist) {
-      const { puja_id } = req.params;
-      const response = await pujaService.getPujaDetails(puja_id);
-      res.status(response.success ? 200 : 404).json(response);
-    } else {
-      res.status(403).json({ success: false, error: "Invalid token" });
+routes.get(
+  "/pujas/bycategory/:category_id",
+  authenticateToken,
+  async (req, res) => {
+    console.log("Pujas by category request received");
+    try {
+      const ifExist = await userService.checkUserExists(null, null, req.user.id);
+
+      if (ifExist.exists) {
+        const { category_id } = req.params;
+        const response = await pujaService.getPujaByCategory(category_id);
+        res.status(response.success ? 200 : 404).json(response);
+      } else {
+        res.status(403).json({ success: false, error: "Invalid token" });
+      }
+    } catch (error) {
+      console.error("Pujas by Category Error:", error);
+      res.status(500).json({ success: false, error: error.message });
     }
-  } catch (error) {
-    console.error("Puja Details Error:", error);
-    res.status(500).json({ success: false, error: error.message });
   }
-});
+);
+
+routes.get(
+  "/fetch/puja/details/:puja_id",
+  authenticateToken,
+  async (req, res) => {
+    console.log("Puja details request received");
+    try {
+      const ifExist = await userService.checkUserExists(null, null, req.user.id);
+
+      if (ifExist.exists) {
+        const { puja_id } = req.params;
+        const response = await pujaService.getPujaDetails(puja_id);
+        res.status(response.success ? 200 : 404).json(response);
+      } else {
+        res.status(403).json({ success: false, error: "Invalid token" });
+      }
+    } catch (error) {
+      console.error("Puja Details Error:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
 
 // ==================== PACKAGE ROUTES ====================
 
 routes.get("/puja/packages/:puja_id", authenticateToken, async (req, res) => {
   console.log("Packages request received");
   try {
-    const ifExist = await userService.checkUserExists(req.user.email, null);
-    
-    if (ifExist) {
+    const ifExist = await userService.checkUserExists(null, null, req.user.id);
+
+    if (ifExist.exists) {
       const { puja_id } = req.params;
       const response = await packageService.getPackagesByPujaId(puja_id);
       res.status(response.success ? 200 : 404).json(response);
@@ -206,32 +373,40 @@ routes.get("/puja/packages/:puja_id", authenticateToken, async (req, res) => {
   }
 });
 
-routes.get("/fetch/checkout/:package_id", authenticateToken, async (req, res) => {
-  console.log("Checkout details request received");
-  try {
-    const ifExist = await userService.checkUserExists(req.user.email, null);
-    
-    if (ifExist) {
-      const { package_id } = req.params;
-      const response = await packageService.getPackageCheckoutDetails(package_id);
-      res.status(response.success ? 200 : 404).json(response);
-    } else {
-      res.status(403).json({ success: false, error: "Invalid token" });
+routes.get(
+  "/fetch/checkout/:package_id",
+  authenticateToken,
+  async (req, res) => {
+    console.log("Checkout details request received");
+    try {
+      const ifExist = await userService.checkUserExists(null, null, req.user.id);
+
+      if (ifExist.exists) {
+        const { package_id } = req.params;
+        const response = await packageService.getPackageCheckoutDetails(
+          package_id
+        );
+        console.log("Checkout Response:");
+        console.log(response);
+        res.status(response.success ? 200 : 404).json(response);
+      } else {
+        res.status(403).json({ success: false, error: "Invalid token" });
+      }
+    } catch (error) {
+      console.error("Checkout Error:", error);
+      res.status(500).json({ success: false, error: error.message });
     }
-  } catch (error) {
-    console.error("Checkout Error:", error);
-    res.status(500).json({ success: false, error: error.message });
   }
-});
+);
 
 // ==================== PRIEST ROUTES ====================
 
 routes.get("/fetch/priest/", authenticateToken, async (req, res) => {
   console.log("Priests list request received");
   try {
-    const ifExist = await userService.checkUserExists(req.user.email, null);
-    
-    if (ifExist) {
+    const ifExist = await userService.checkUserExists(null, null, req.user.id);
+
+    if (ifExist.exists) {
       const response = await priestService.getAvailablePriests();
       res.status(response.success ? 200 : 404).json(response);
     } else {
@@ -248,71 +423,188 @@ routes.get("/fetch/priest/", authenticateToken, async (req, res) => {
 routes.post("/create-order/booking/", authenticateToken, async (req, res) => {
   console.log("Creating an Order");
   try {
-    const user_email = req.user.email;
+    const id = req.user.id;
+    const user_email = req.body.user_email;
     const user_phone = req.body.phone;
     const booking_info = req.body;
-    
-    const response = await bookingService.createBooking(user_email, user_phone, booking_info);
+
+    const response = await bookingService.createBooking(
+      id,
+      user_email,
+      user_phone,
+      booking_info
+    );
     res.status(response.success ? 200 : 400).json(response);
   } catch (error) {
     console.error("Booking Error:", error);
-    res.status(500).json({ success: false, message: "Server error while processing booking." });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error while processing booking.",
+      });
   }
 });
 
-routes.post("/bookings/getall/", authenticateToken, async (req, res) => {
+routes.get("/bookings/getall/", authenticateToken, async (req, res) => {
   console.log("Fetching all bookings");
   try {
-    const user_email = req.user.email;
-    const user_phone = req.body.phone || null;
-    const checkExist = await userService.checkUserExists(user_email, user_phone);
-    if (!checkExist) {
-      return res.status(403).json({ success: false, error: "Invalid User or Token" });
+    const id = req.user.id;
+    // const user_email = req.body.email;
+    // const user_phone = req.body.phone || null;
+    const checkExist = await userService.checkUserExists(
+      null,
+      null,
+      id
+    );
+    if (!checkExist.exists) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Invalid User or Token" });
     }
-    const response = await bookingService.getAllBookings(user_email, user_phone);
+    const response = await bookingService.getAllBookings(id);
     res.status(response.success ? 200 : 404).json(response);
   } catch (error) {
     console.error("Get All Bookings Error:", error);
-    res.status(500).json({ success: false, message: "Server error while fetching bookings." });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error while fetching bookings.",
+      });
+  }
+});
+
+routes.post("/bookings/recents/", authenticateToken, async (req, res) => {
+  console.log("Fetching recent bookings");
+  console.log("Request Body:", req.body);
+  try {
+    const id = req.user.id;
+    // const user_email = req.body.email;
+    // const user_phone = req.body.phone || null;
+    const checkExist = await userService.checkUserExists(
+      null,
+      null,
+      id
+    );
+    if (!checkExist.exists) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Invalid User or Token" });
+    }
+    const response = await bookingService.getRecentBookings(id, req.body.limit);
+    res.status(response.success ? 200 : 404).json(response);
+  } catch (error) {
+    console.error("Get Recent Bookings Error:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error while fetching recent bookings.",
+      });
   }
 });
 
 routes.post("/booking/details/", authenticateToken, async (req, res) => {
   console.log("Fetching booking details");
   try {
-    const user_email = req.user.email;
-    const user_phone = req.body.phone || null;
+    const id = req.user.id;
+    // const user_email = req.body.email;
+    // const user_phone = req.body.phone || null;
     const booking_id = req.body.booking_id;
-    const checkExist = await userService.checkUserExists(user_email, user_phone);
-    if (!checkExist) {
-      return res.status(403).json({ success: false, error: "Invalid User or Token" });
-    } 
+    const checkExist = await userService.checkUserExists(
+      null,
+      null,
+      id
+    );
+    if (!checkExist.exists) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Invalid User or Token" });
+    }
     const response = await bookingService.getBookingDetails(booking_id);
     res.status(response.success ? 200 : 404).json(response);
   } catch (error) {
     console.error("Get Booking Details Error:", error);
-    res.status(500).json({ success: false, message: "Server error while fetching booking details." });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Server error while fetching booking details.",
+      });
   }
 });
 
+routes.post(
+  "/booking/direct-cancellation/",
+  authenticateToken,
+  async (req, res) => {
+    console.log("Cancelling booking");
+    try {
+      const id = req.user.id;
+      // const user_email = req.body.email;
+      // const user_phone = req.body.phone || null;
+      const booking_id = req.body.booking_id;
+      const checkExist = await userService.checkUserExists(
+        null,
+        null,
+        id
+      );
+      if (!checkExist.exists) {
+        return res
+          .status(403)
+          .json({ success: false, error: "Invalid User or Token" });
+      }
+      const response = await bookingService.cancelBooking(booking_id);
+      res.status(response.success ? 200 : 400).json(response);
+    } catch (error) {
+      console.error("Cancel Booking Error:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Server error while cancelling booking.",
+        });
+    }
+  }
+);
 
-routes.post("/booking/cancel/", authenticateToken, async (req, res) => {
-  console.log("Cancelling booking");
-  try {
-    const user_email = req.user.email;
-    const user_phone = req.body.phone || null;
-    const booking_id = req.body.booking_id;
-    const checkExist = await userService.checkUserExists(user_email, user_phone);
-    if (!checkExist) {
-      return res.status(403).json({ success: false, error: "Invalid User or Token" });
-    } 
-    const response = await bookingService.cancelBooking(booking_id);
-    res.status(response.success ? 200 : 400).json(response);
+routes.post(
+  "/booking/request-cancellation/",
+  authenticateToken,
+  async (req, res) => {
+    console.log("Requesting booking cancellation");
+    try {
+      console.log("Request Booking Cancellation Body:", req.body);
+      const user_id = req.user.id;
+      const booking_id = req.body.booking_id;
+      const reason = req.body.reason || "";
+      const checkExist = await userService.checkUserExists(
+        null,
+        null,
+        id
+      );
+      if (!checkExist.exists) {
+        return res
+          .status(403)
+          .json({ success: false, error: "Invalid User or Token" });
+      }
+      const response = await bookingService.requestBookingCancellation(
+        booking_id,
+        user_id,
+        reason
+      );
+      res.status(response.success ? 200 : 400).json(response);
+    } catch (error) {
+      console.error("Request Booking Cancellation Error:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Server error while requesting booking cancellation.",
+        });
+    }
   }
-  catch (error) {
-    console.error("Cancel Booking Error:", error);
-    res.status(500).json({ success: false, message: "Server error while cancelling booking." });
-  }
-});
+);
 
 module.exports = routes;

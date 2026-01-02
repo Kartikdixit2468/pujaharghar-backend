@@ -3,8 +3,8 @@ require("dotenv").config();
 
 const SECRET_KEY = process.env.JWT_SECRET;
 
-const createSessionToken = (email) => {
-  return jwt.sign({ email: email }, SECRET_KEY, { expiresIn: "30d" });
+const createSessionToken = (id) => {
+  return jwt.sign({ id: id }, SECRET_KEY, { expiresIn: "30d" });
 };
 
 const verifyToken = (token) => {

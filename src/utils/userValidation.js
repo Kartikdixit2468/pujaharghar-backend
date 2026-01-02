@@ -12,22 +12,51 @@ const fetchPhones = async () => {
   return user_phones;
 };
 
-const checkIfUserExist = async (user_email, user_phone) => {
+const checkIfUserExist = async (user_email, user_phone, user_id=null) => {
   // First check if phone exists
-  console.log("Checking if user exists with email:", user_email, "or phone:", user_phone);
+  user_email = user_email || null;
+  user_phone = user_phone || null;
 
-  if (user_phone) {
-    const phones = await fetchPhones();
-    if (phones.includes(user_phone)) {
-      return { exists: true, message: "Phone already exists" };
+  console.log("Checking existence for user with email:", user_email, "phone:", user_phone, "user_id:", user_id);
+
+  if(user_id) {
+    console.log("Checking existence for user ID inside the checkifexist function:", user_id);
+    try {
+      console.log("User ID provided, checking by ID:", user_id);
+      const [idData] = await db.execute(
+        "SELECT id FROM users WHERE id = ?",
+        [user_id]
+      );
+      if (idData.length > 0) {
+        console.log("User ID exists in database at the core function:", user_id);
+        return { exists: true, user_id: idData[0].id, message: "User ID exists" };
+      }
+    } catch (error) {
+      console.error("Database error checking user ID:", error);
+      throw error;
+    }
+  }
+  
+  else if (user_phone) {
+    try {
+      const [phoneData] = await db.execute(
+        "SELECT id FROM users WHERE phone = ?",
+        [user_phone]
+      );
+      if (phoneData.length > 0) {
+        return { exists: true, user_id: phoneData[0].id, message: "Phone already exists" };
+      }
+    } catch (error) {
+      console.error("Database error checking phone:", error);
+      throw error;
     }
   }
 
   // If phone doesn't exist, check email and e_verified from database
-  if (user_email) {
+  else if (user_email) {
     try {
       const [emailData] = await db.execute(
-        "SELECT email, e_verified FROM users WHERE email = ?",
+        "SELECT id, email, e_verified FROM users WHERE email = ?",
         [user_email]
       );
 
@@ -35,7 +64,7 @@ const checkIfUserExist = async (user_email, user_phone) => {
         const user = emailData[0];
         // Check if email exists and e_verified is true
         if (user.e_verified) {
-          return { exists: true, message: "Email already exists" };
+          return { exists: true, user_id: user.id, message: "Email already exists" };
         }
       }
     } catch (error) {
@@ -43,6 +72,7 @@ const checkIfUserExist = async (user_email, user_phone) => {
       throw error;
     }
   }
+
   return { exists: false, message: "User does not exist" };
 };
 

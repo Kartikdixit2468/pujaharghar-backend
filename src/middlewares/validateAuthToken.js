@@ -18,7 +18,7 @@ const authMiddleware = (req, res, next) => {
   try {
     const user = jwt.verify(token, SECRET_KEY);
     req.user = user; // Attach user to request
-    // console.log("Authenticated user:", user);
+    console.log("Authenticated user:", user);
     next(); // Proceed to actual route
   } catch (err) {
     // console.log("Token verification failed:", err);

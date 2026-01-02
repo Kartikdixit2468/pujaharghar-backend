@@ -1,5 +1,19 @@
 const db = require("../config/db");
 
+const getAllPujas = async () => {
+  try {
+    const [puja_data] = await db.execute("select * from puja");
+    if (puja_data.length > 0) {
+      return { success: true, data: puja_data };
+    }
+    else {
+      return { success: false, error: "Dataset Empty", data: {} };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+};
+
 const getTrendingPujas = async () => {
   try {
     const [puja_data] = await db.execute("select puja_id from trending_pujas");
@@ -22,8 +36,20 @@ const getTrendingPujas = async () => {
 
 const getCategories = async () => {
   try {
-    const [categories] = await db.execute("select * from categories");
-    
+    const [categories] = await db.execute(`
+        SELECT 
+          c.id,
+          c.name,
+          c.image,
+          COUNT(p.puja_id) AS count
+        FROM categories c
+        LEFT JOIN puja p 
+          ON p.category = c.id
+        GROUP BY c.id, c.name, c.image
+      `);
+
+        console.log("Categories fetched:", categories);
+
     if (categories.length > 0) {
       return { success: true, data: categories };
     } else {
@@ -45,6 +71,22 @@ const getPujaDetails = async (puja_id) => {
       const data = puja_details[0];
       return { success: true, data: data };
     } else {
+      return { success: true, error: "Dataset Empty", data: {} };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+};
+
+const getPujaByCategory = async (category) => {
+  try {
+    const [puja_data] = await db.execute(
+      `select * from puja where category=?`,
+      [category]
+    );
+    if (puja_data.length > 0) {
+      return { success: true, data: puja_data };
+    } else {
       return { success: false, error: "Dataset Empty", data: {} };
     }
   } catch (err) {
@@ -52,4 +94,10 @@ const getPujaDetails = async (puja_id) => {
   }
 };
 
-module.exports = { getTrendingPujas, getCategories, getPujaDetails };
+module.exports = {
+  getAllPujas,
+  getTrendingPujas,
+  getCategories,
+  getPujaDetails,
+  getPujaByCategory,
+};

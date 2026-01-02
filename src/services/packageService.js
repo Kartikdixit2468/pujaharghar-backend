@@ -30,6 +30,7 @@ const getPackagesByPujaId = async (puja_id) => {
 
 const getPackageCheckoutDetails = async (package_id) => {
   try {
+    // # Also fetch puja name with
     const [package_info] = await db.execute(
       `select * from package where package_id=?`,
       [package_id]
@@ -54,7 +55,7 @@ const getPackageCheckoutDetails = async (package_id) => {
           package_price: package_data.price,
           features: features,
           puja_id: puja_data.puja_id,
-          puja_name: puja_data.NAME,
+          puja_name: puja_data.name,
           puja_desc: puja_data.description,
           travel_cost: 500,
         };

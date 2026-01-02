@@ -3,11 +3,11 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 const authenticateToken = require("../middlewares/validateAuthToken");
-const paymentService = require("../sevices/payment_service");
+const paymentService = require("../services/paymentService");
 
 // Function to check all parameters and design query accordingly
 const AddPaymentEntry = async (Payment_info) => {
-  const [order_id, payment_id, payment_signature, user] = Payment_info;
+  const [order_id, payment_id, payment_signature, user_id] = Payment_info;
 
   try {
     const query = `
@@ -15,8 +15,7 @@ const AddPaymentEntry = async (Payment_info) => {
       VALUES (?, ?, ?, ?, ?)
     `;
 
-    const values = [order_id, payment_id, payment_signature, user, false];
-
+    const values = [order_id, payment_id, payment_signature, user_id, false];
     const [result] = await db.execute(query, values); // or db.query based on your driver
 
     console.log("Payment entry added:", result);
@@ -70,7 +69,7 @@ router.post("/verify-payment", authenticateToken, async (req, res) => {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-      user.email,
+      user.id,
     ];
     const is_registered = await AddPaymentEntry(info);
     if (is_registered.success) {
