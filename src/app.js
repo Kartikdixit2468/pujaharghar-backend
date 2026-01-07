@@ -7,6 +7,7 @@ const service_routes = require('./routes/service_routes')
 const payment_routes = require('./routes/payment_routes')
 const ticket_routes = require('./routes/ticket_routes')
 const otp_routes = require("./routes/otp_routes");
+const email_verification_routes = require("./routes/email_verification_routes");
 
 
 // Middlewares
@@ -39,4 +40,9 @@ app.use('/api/tickets', ticket_routes);
 // For OTP Services
 app.use("/api/otp", otp_routes);
 
+// For Email Verification
+app.use("/api/verify-email", email_verification_routes);
+
 module.exports = app;
+
+// /api/verify-email/verify-email/  
