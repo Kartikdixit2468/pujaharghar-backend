@@ -1,5 +1,6 @@
 const express = require('express');
 const otpService = require("../services/otpService");
+import { OTPLimiter } from '../middlewares/rateLimiter.js';
 // const authenticateToken = require("../middlewares/validateAuthToken");
 
 
@@ -8,7 +9,7 @@ const router = express.Router();
 // ------------------- OTP ROUTES -------------------
 
 // POST - Send OTP
-router.post('/send-otp', async (req, res) => {
+router.post('/send-otp',OTPLimiter, async (req, res) => {
     console.log("OTP send request received");
     try {
         const { phone } = req.body;
