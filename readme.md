@@ -1,8 +1,8 @@
-# PujaHarGhar Backend API
+# PoojaOne Backend API
 
 **Version:** V1.0.2
 
-A comprehensive backend API for the PujaHarGhar platform - a digital solution for booking religious ceremonies and connecting users with professional priests.
+A comprehensive backend API for the PoojaOne platform - a digital solution for booking religious ceremonies and connecting users with professional priests.
 
 ---
 
@@ -25,7 +25,7 @@ A comprehensive backend API for the PujaHarGhar platform - a digital solution fo
 
 ## 🎯 Overview
 
-PujaHarGhar Backend is a Node.js/Express-based REST API that powers the PujaHarGhar application. It handles user authentication, puja bookings, priest management, payment processing, OTP verification, and customer support ticketing. This backend API is designed to work seamlessly with the [PujaHarGhar Frontend](https://github.com/kartikdixit2468/pujaharghar).
+PoojaOne Backend is a Node.js/Express-based REST API that powers the PoojaOne application. It handles user authentication, puja bookings, priest management, payment processing, OTP verification, and customer support ticketing. This backend API is designed to work seamlessly with the [PoojaOne Frontend](https://github.com/kartikdixit2468/pujaharghar).
 
 ---
 
@@ -192,8 +192,8 @@ This will install all required packages listed in `package.json`:
 Connect to your MySQL server and create the database:
 
 ```sql
-CREATE DATABASE pujaharghar;
-USE pujaharghar;
+CREATE DATABASE poojaone;
+USE poojaone;
 ```
 
 Then, create the necessary tables. Here are the main tables:
@@ -283,7 +283,7 @@ In the root directory, create a `.env` file and add the following variables:
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=pujaharghar
+DB_NAME=poojaone
 DB_PORT=3306
 
 # Server Configuration
@@ -299,7 +299,7 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASSWORD=your_app_password
-EMAIL_FROM=noreply@pujaharghar.com
+EMAIL_FROM=noreply@poojaone.com
 
 # OTP Configuration
 OTP_EXPIRATION=10
@@ -535,13 +535,11 @@ The API integrates with **Razorpay** for secure payment processing:
 - Token might be malformed
 - Ensure correct Authorization header format
 
-**Issue: "CORS error"**
-- Check FRONTEND_URL in `.env`
-- Ensure CORS middleware is properly configured
-
 **Issue: "Email not sending"**
 - Verify EMAIL_USER and EMAIL_PASSWORD in `.env`
 - For Gmail, use App Password instead of regular password
+- User currently can only send mail through his local device, not with the cloud services, 
+- [Alternatives that you can prefer instead of gmail as a service] - render , 2factor, msg91 more....
 - Enable "Less secure app access" if needed
 
 ---
@@ -554,17 +552,10 @@ This backend API is designed to work with:
 
 ---
 
-## 📝 API Documentation
+## 📝 More API Documentation
 
-For detailed API documentation, refer to:
 - [TICKET_SYSTEM_API.md](TICKET_SYSTEM_API.md) - Support ticket system API details
 - [TICKET_IMPLEMENTATION_SUMMARY.md](TICKET_IMPLEMENTATION_SUMMARY.md) - Implementation summary
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ---
 
@@ -579,7 +570,7 @@ This project is licensed under the ISC License - see [package.json](package.json
 **Kartik Dixit**
 
 - GitHub: [@Kartikdixit2468](https://github.com/Kartikdixit2468)
-- Repository: [pujaharghar-backend](https://github.com/Kartikdixit2468/pujaharghar-backend)
+- Repository: [poojaone-backend](https://github.com/Kartikdixit2468/pujaharghar-backend)
 
 ---
 
@@ -590,7 +581,5 @@ For issues, bugs, or feature requests, please open an issue on [GitHub Issues](h
 ---
 
 ## 🎉 Thank You
-
-Thank you for using PujaHarGhar Backend API. We hope it serves your application needs perfectly!
 
 **Happy Coding!** 🚀
