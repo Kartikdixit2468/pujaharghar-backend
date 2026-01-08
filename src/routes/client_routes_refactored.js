@@ -1,6 +1,7 @@
 // Build with proud by Kartik Dixit!
 const express = require("express");
 const authenticateToken = require("../middlewares/validateAuthToken");
+const { authLimiter } = require("../middlewares/rateLimiter");
 
 // Import services
 const userService = require("../services/userService");
@@ -74,7 +75,7 @@ routes.post("/check/register/user/manual", async (req, res) => {
     // }
 });
 
-routes.post("/register/user/manual", async (req, res) => {
+routes.post("/register/user/manual",authLimiter, async (req, res) => {
   console.log("POST request received - Manual User Registration");
 
   const user_email = req.body.email || null;
@@ -119,7 +120,7 @@ routes.post("/user/existing/check", async (req, res) => {
   }
 });
 
-routes.post("/user/login", async (req, res) => {
+routes.post("/user/login",authLimiter ,async (req, res) => {
   console.log("Login request received");
   try {
     const email = req.body.email;
