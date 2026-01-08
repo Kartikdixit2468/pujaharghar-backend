@@ -9,9 +9,15 @@ const ticket_routes = require('./routes/ticket_routes')
 const otp_routes = require("./routes/otp_routes");
 const email_verification_routes = require("./routes/email_verification_routes");
 
+//  Importing Middlewares
+const {generalLimiter, OTPLimiter, authLimiter} = require('./middlewares/rateLimiter');
 
 // Middlewares
 app.use(express.json())
+app.use(generalLimiter);
+
+app.set('trust proxy', true);
+
 
 // In Express.js
 app.use('/uploads', express.static('uploads'));
