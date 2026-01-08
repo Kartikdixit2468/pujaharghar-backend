@@ -25,7 +25,7 @@ A comprehensive backend API for the PoojaOne platform - a digital solution for b
 
 ## 🎯 Overview
 
-PoojaOne Backend is a Node.js/Express-based REST API that powers the PoojaOne application. It handles user authentication, puja bookings, priest management, payment processing, OTP verification, and customer support ticketing. This backend API is designed to work seamlessly with the [PoojaOne Frontend](https://github.com/kartikdixit2468/pujaharghar).
+PoojaOne Backend is a Node.js/Express-based REST API that powers the PoojaOne application. It handles user authentication, puja bookings, priest management, payment processing, OTP verification, and customer support ticketing. This backend API is designed to work seamlessly with the [PoojaOne Frontend](https://github.com/kartikdixit2468/poojaone-mobile-app/).
 
 ---
 
@@ -166,8 +166,8 @@ Before setting up the backend, ensure you have the following installed:
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/Kartikdixit2468/pujaharghar-backend.git
-cd pujaharghar-backend
+git clone https://github.com/kartikdixit2468/poojaone-mobile-app.git
+cd poojaone-backend
 ```
 
 ### Step 2: Install Dependencies
@@ -548,7 +548,7 @@ The API integrates with **Razorpay** for secure payment processing:
 
 This backend API is designed to work with:
 
-- **Frontend Application**: [https://github.com/kartikdixit2468/pujaharghar](https://github.com/kartikdixit2468/pujaharghar)
+- **Frontend Application**: [https://github.com/kartikdixit2468/poojaone-mobile-app/](https://github.com/kartikdixit2468/poojaone-mobile-app/)
 
 ---
 
@@ -570,13 +570,13 @@ This project is licensed under the ISC License - see [package.json](package.json
 **Kartik Dixit**
 
 - GitHub: [@Kartikdixit2468](https://github.com/Kartikdixit2468)
-- Repository: [poojaone-backend](https://github.com/Kartikdixit2468/pujaharghar-backend)
+- Repository: [poojaone-backend](https://github.com/Kartikdixit2468/poojaone-backend)
 
 ---
 
 ## 📞 Support
 
-For issues, bugs, or feature requests, please open an issue on [GitHub Issues](https://github.com/Kartikdixit2468/pujaharghar-backend/issues).
+For issues, bugs, or feature requests, please open an issue on [GitHub Issues](https://github.com/kartikdixit2468/poojaone-mobile-app/issues).
 
 ---
 
